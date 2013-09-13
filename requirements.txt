@@ -5,6 +5,7 @@ SQLAlchemy==0.8.2
 Werkzeug==0.9.4
 flask-heroku==0.1.4
 gtfsdb==0.1.0
+gunicorn==18.0
 itsdangerous==0.23
 numpy==1.7.1
 pandas==0.12.0

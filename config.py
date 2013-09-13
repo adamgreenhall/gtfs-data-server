@@ -16,7 +16,8 @@ if os.environ.get('IS_HEROKU', False):
         port=url.port
     )
     config = dict(
-        debug=True,
+        debug=False,
+        host='0.0.0.0',
         port=int(os.environ['PORT']))
         
     print 'running on port={}, db={}'.format(
