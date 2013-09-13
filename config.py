@@ -1,20 +1,12 @@
 import os
 from psycopg2 import connect
-import urlparse
+from flask.ext.heroku import Heroku
 
-if os.environ.get('IS_HEROKU', False):
-    # if Heroku 
-    # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-python
-    urlparse.uses_netloc.append("postgres")
-    url = urlparse.urlparse(os.environ["DATABASE_URL"])
-
-    con = connect(
-        database=url.path[1:],
-        user=url.username,
-        password=url.password,
-        host=url.hostname,
-        port=url.port
-    )
-else:
-    # is local
-    con = connect("postgresql://postgres@localhost/bart-gtfs")
+def configure(app):
+    if os.environ.get('IS_HEROKU', False):
+        # if Heroku 
+        Heroku(app)
+        return connect(app.config['SQLALCHEMY_DATABASE_URI'])
+    else:
+        # is local
+        return connect("postgresql://postgres@localhost/bart-gtfs")
