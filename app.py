@@ -20,7 +20,7 @@ WHERE
 
 if not config['debug']:
     subprocess.Popen(
-        'python gtfsrdb/gtfsrdb.py -t #{url_update} -d #{db} --create-tables --wait 30'.format(
+        'python gtfsrdb/gtfsrdb.py -t {url_update} -d {db} --create-tables --wait 30'.format(
         url_update=config['url_update'],
         db=config['db']
         ),
