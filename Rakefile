@@ -1,4 +1,9 @@
-db = "postgresql://postgres@localhost/bart-gtfs"
+if ENV['IS_HEROKU']
+  db = ENV['DATABASE_URL']
+else
+  db = "postgresql://postgres@localhost/bart-gtfs"
+end
+
 url_gtfs = "http://bart.gov/dev/schedules/google_transit.zip" 
 url_update = "http://www.bart.gov/dev/gtrtfs/tripupdate.aspx"
 
@@ -18,5 +23,5 @@ task :update do
 end
 desc "run the webserver"
 task :run do
-  system("source venv/bin/activate && python app.py")
+  system("venv/bin/python app.py")
 end

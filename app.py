@@ -1,11 +1,9 @@
 from flask import Flask, jsonify, request
 import pandas as pd
-from psycopg2 import connect
+from config import con
 # from ipdb import set_trace
 
 app = Flask(__name__)
-
-con = connect("postgresql://postgres@localhost/bart-gtfs")
 
 query_template = """
 SELECT trips.route_id, trips.trip_id, trips.trip_headsign, 
