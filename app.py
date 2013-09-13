@@ -1,10 +1,9 @@
 from flask import Flask, jsonify, request
 import pandas as pd
-from config import configure
+from config import con, config
 # from ipdb import set_trace
 
 app = Flask(__name__)
-con = configure(app)
 
 query_template = """
 SELECT trips.route_id, trips.trip_id, trips.trip_headsign, 
@@ -50,5 +49,4 @@ def test():
     return jsonify(app_ok=True)
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run()
+    app.run(**config)

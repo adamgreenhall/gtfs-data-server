@@ -23,5 +23,5 @@ task :update do
 end
 desc "run the webserver"
 task :run do
-  system("venv/bin/python app.py")
+  system("source venv/bin/activate && python app.py")
 end
