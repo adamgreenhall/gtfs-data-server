@@ -17,7 +17,10 @@ if os.environ.get('IS_HEROKU', False):
     )
     config = dict(
         debug=True,
-        port=int(os.environ.get('PORT', 33507)))
+        port=int(os.environ['PORT']))
+        
+    print 'running on port={}, db={}'.format(
+        config['port'], os.environ["DATABASE_URL"])
 
 else:
     # is local
