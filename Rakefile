@@ -10,7 +10,6 @@ url_update = "http://www.bart.gov/dev/gtrtfs/tripupdate.aspx"
 desc "install all of the requirements and set up the schedule"
 task :install do
   # scheduled gtfs data  
-  `createdb bart-gtfs`
   system("gtfsdb-load --database_url #{db} #{url_gtfs}")
 end
 

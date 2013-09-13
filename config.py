@@ -22,6 +22,7 @@ if os.environ.get('IS_HEROKU', False):
         db=os.environ["DATABASE_URL"],
         url_update="http://www.bart.gov/dev/gtrtfs/tripupdate.aspx"
         )
+    print 'config={}'.format(config)
 else:
     # is local
     con = connect("postgresql://postgres@localhost/bart-gtfs")
