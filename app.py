@@ -37,12 +37,16 @@ def get_schedule():
         '"{}"'.format(placeholder), df.to_json(orient='records'))
     return response
 
-@app.route('/test')
-def test():
+@app.route('/test-db')
+def test_db():
     cur = con.cursor()
     cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
     result = cur.fetchall()
-    return jsonify(app_ok=True, database_ok=result)
+    return jsonify(database_tables=result)
+
+@app.route('/test')
+def test():
+    return jsonify(app_ok=True)
 
 if __name__ == '__main__':
     app.debug = True
