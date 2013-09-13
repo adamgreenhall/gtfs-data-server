@@ -1,6 +1,7 @@
 import os
 from psycopg2 import connect
 import urlparse
+import pandas as pd
 
 if os.environ.get('IS_HEROKU', False):
     # if Heroku 
@@ -29,3 +30,14 @@ else:
     config = dict(
         debug=True,
         port=5000)
+
+
+def service_type(timestamp):
+    '''get BART service_id'''
+    dayofweek = pd.Timestamp(timestamp).dayofweek # monday is 0, ..., sat is 5, sun is 6
+    if dayofweek == 5:
+        return 'SAT'
+    elif dayofweek == 6:
+        return 'SUN'
+    else:
+        return 'WKDY'
