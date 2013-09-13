@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 import pandas as pd
 from config import con, config
+import subprocess
 # from ipdb import set_trace
 
 app = Flask(__name__)
@@ -17,6 +18,13 @@ WHERE
     trips.trip_id::text = stop_times.trip_id::text
 """
 
+if not config['debug']:
+    subprocess.Popen(
+        'python gtfsrdb/gtfsrdb.py -t #{url_update} -d #{db} --create-tables --wait 30'.format(
+        url_update=config['url_update'],
+        db=config['db']
+        ),
+        shell=True)
 
 @app.route('/schedule')
 def get_schedule():

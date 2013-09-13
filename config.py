@@ -18,11 +18,10 @@ if os.environ.get('IS_HEROKU', False):
     config = dict(
         debug=False,
         host='0.0.0.0',
-        port=int(os.environ['PORT']))
-        
-    print 'running on port={}, db={}'.format(
-        config['port'], os.environ["DATABASE_URL"])
-
+        port=int(os.environ['PORT']),
+        db=os.environ["DATABASE_URL"],
+        url_update="http://www.bart.gov/dev/gtrtfs/tripupdate.aspx"
+        )
 else:
     # is local
     con = connect("postgresql://postgres@localhost/bart-gtfs")
