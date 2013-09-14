@@ -3,6 +3,7 @@ import pandas as pd
 from config import con, config, service_type
 import subprocess
 from datetime import timedelta
+from json import load, dumps
 
 from ipdb import set_trace
 
@@ -16,6 +17,14 @@ if not config['debug']:
             db=config['db']
         ),
         shell=True)
+
+with open('trip-distances.json', 'r') as f:
+    trip_stop_dists = load(f)
+
+# convert dists back to json strings
+trip_stop_dists = {k: dumps(v) for k, v in trip_stop_dists.iteritems()}
+    
+    
 
 @app.route('/schedule')
 def get_schedule():
@@ -89,12 +98,13 @@ def create_schedule(date, route_id):
             id_trip=id_trip,
             trip_direction=trip_direction,
             stops="__trip_stops__{}".format(id_trip),
+            stop_locations="__trip_stop_locations__{}".format(id_trip),
             ))
 
-    
     data = dict(
         date=str(date.date()),
-        stop_locations={}, # list of dict(distance, direction, id_stop)
+        # TODO - stop locations should be top-level route 
+        # currently trip-specific
         id_route=route_id,
         trips=trips,
         )
@@ -102,7 +112,12 @@ def create_schedule(date, route_id):
     response = jsonify(data=data)
     for id_trip, stops_json in trip_stops.iteritems():
         response.data = response.data.replace(
-            '"__trip_stops__{}"'.format(id_trip), stops_json)
+                '"__trip_stops__{}"'.format(id_trip),
+                stops_json
+            ).replace(
+                '"__trip_stop_locations__{}"'.format(id_trip), 
+                trip_stop_dists[id_trip]
+            )
     return response
 
 @app.route('/test-db')
