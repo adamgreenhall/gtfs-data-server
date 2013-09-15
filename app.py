@@ -5,6 +5,10 @@ import subprocess
 from datetime import timedelta
 from json import load
 
+if config['debug']:
+    from ipdb import set_trace
+
+
 app = Flask(__name__)
 
 if not config['debug']:
@@ -17,11 +21,12 @@ if not config['debug']:
         shell=True)
 
     # heroku needs to run get_stop_distances first
-    from get_stop_distances import get_route_dists
-    get_route_dists()
-    
-with open('route-distances.json', 'r') as f:
-    stop_dists = load(f)
+    from get_stop_distances import get_stop_dists
+    stop_dists = get_stop_dists()
+    print stop_dists
+else:
+    with open('route-distances.json', 'r') as f:
+        stop_dists = load(f)
 
 
 @app.route('/schedule')
@@ -125,6 +130,4 @@ def test():
     return jsonify(app_ok=True)
 
 if __name__ == '__main__':
-    if config['debug']:
-        from ipdb import set_trace
     app.run(**config)

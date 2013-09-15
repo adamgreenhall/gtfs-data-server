@@ -88,7 +88,7 @@ def merge_dists(dists_direction):
     return dists
     
     
-def get_route_dists():
+def get_stop_dists(write_json=False):
     query = """
     select 
         t.route_id, t.trip_id, t.direction_id, 
@@ -103,7 +103,10 @@ def get_route_dists():
     trip_max['trip_id'] = df.trip_id.ix[trip_max.indexer].values
     route_ids = trip_max.index.levels[0]
     
-    jsons = dumps({rid: "__dists_{}__".format(rid) for rid in route_ids})
+    distances = {}
+
+    if write_json:
+        jsons = dumps({rid: "__dists_{}__".format(rid) for rid in route_ids})
     
     # get per route distances based on longest trip (in either direction)
     # not just per-trip distances
@@ -112,12 +115,16 @@ def get_route_dists():
         print rid
         dists = merge_dists({direction: get_dists(tid, con) 
             for direction, tid in trip_max.ix[rid].trip_id.iteritems()})
-        
-        jsons = jsons.replace('"__dists_{}__"'.format(rid), 
-            dists.to_json(orient='records', double_precision=2))
-    
-    with open('route-distances.json', 'w+') as f:
-        f.write(jsons)        
+        distances[rid] = dists
 
+        if write_json:
+            jsons = jsons.replace('"__dists_{}__"'.format(rid), 
+                dists.to_json(orient='records', double_precision=2))
+    if write_json:
+        with open('route-distances.json', 'w+') as f:
+            f.write(jsons)
+    
+    return distances
+    
 if __name__ == "__main__":
-    get_route_dists()
+    get_stop_dists(write_json=True)
