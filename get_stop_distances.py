@@ -5,6 +5,7 @@ import numpy as np
 import math
 import pandas as pd
 from json import dumps
+from config import con
 
 def get_linear_dist(df):
     '''convert lat long to a linear distance travelled since start'''
@@ -86,8 +87,8 @@ def merge_dists(dists_direction):
         dists.ix[outbound_only, 'direction'] = 0
     return dists
     
-if __name__ == "__main__":
-    from config import con
+    
+def get_route_dists():
     query = """
     select 
         t.route_id, t.trip_id, t.direction_id, 
@@ -116,4 +117,7 @@ if __name__ == "__main__":
             dists.to_json(orient='records', double_precision=2))
     
     with open('route-distances.json', 'w+') as f:
-        f.write(jsons)
+        f.write(jsons)        
+
+if __name__ == "__main__":
+    get_route_dists()

@@ -16,6 +16,10 @@ if not config['debug']:
         ),
         shell=True)
 
+    # heroku needs to run get_stop_distances first
+    from get_stop_distances import get_route_dists
+    get_route_dists()
+    
 with open('route-distances.json', 'r') as f:
     stop_dists = load(f)
 
