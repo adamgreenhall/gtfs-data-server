@@ -6,7 +6,6 @@ import math
 import pandas as pd
 from json import dumps
 
-
 def get_linear_dist(df):
     '''convert lat long to a linear distance travelled since start'''
     LL = ['latitude', 'longitude']
@@ -42,7 +41,6 @@ def haversine_distance(origin, destination):
     return 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
 def get_dists(trip_id, con):
-    print 'trip_id: ', trip_id
     query = """
     select 
         s.stop_id, s.stop_lat, s.stop_lon, st.stop_sequence 
@@ -54,25 +52,68 @@ def get_dists(trip_id, con):
     
     df = pd.read_sql(query, con)
 
-    dists = pd.DataFrame(dict(
-        stop_id=df.stop_id,
-        distance=get_linear_dist(df.rename(columns=dict(
-            stop_lat='latitude', stop_lon='longitude')))
-        ))
-    dists.index.name = 'stop_number'
+    dists = pd.Series(
+        get_linear_dist(df.rename(columns=dict(
+            stop_lat='latitude', stop_lon='longitude'))),
+        index=df.stop_id
+        )
+    dists.name = 'distance'
+    dists.index.name = 'stop_id'
+    return dists
+    
+def merge_dists(dists_direction):
+    if len(dists_direction) == 1:
+        dists = dists_direction[dists_direction.keys()[0]]
+    else:
+        inbound = dists_direction[1]
+        outbound = dists_direction[0]
+        dists = pd.DataFrame(dict(
+            inbound=inbound,
+            outbound=outbound.max() - outbound
+            )).mean(axis=1)
+
+    dists.index.name = 'id_stop'
+    dists.name = 'distance'
+    dists = dists.reset_index().sort('distance').reset_index(drop=True)
+    dists['direction'] = -1 # all stops are in both trip directions
+
+    if len(dists_direction) > 1:
+        inbound_only = dists.id_stop.isin(inbound.index) & \
+            (dists.id_stop.isin(outbound.index) == False)
+        outbound_only = dists.id_stop.isin(outbound.index) & \
+            (dists.id_stop.isin(inbound.index) == False)
+        dists.ix[inbound_only, 'direction'] = 1
+        dists.ix[outbound_only, 'direction'] = 0
     return dists
     
 if __name__ == "__main__":
     from config import con
-    trip_ids = pd.read_sql('select distinct(trip_id) from trips', con).trip_id
-    jsons = dumps({tid: "__dists_{}__".format(tid) for tid in trip_ids})
+    query = """
+    select 
+        t.route_id, t.trip_id, t.direction_id, 
+        count(st.stop_id) as stop_count
+    from trips t, stop_times st
+    where t.trip_id = st.trip_id
+    group by t.trip_id    
+    """
+    df = pd.read_sql(query, con)
+    df['direction_id'] = df.direction_id.fillna(-1)
+    trip_max = pd.DataFrame(dict(indexer=df.groupby(['route_id', 'direction_id']).stop_count.idxmax()))
+    trip_max['trip_id'] = df.trip_id.ix[trip_max.indexer].values
+    route_ids = trip_max.index.levels[0]
     
-    # TODO - get per route distances based on longest trip
+    jsons = dumps({rid: "__dists_{}__".format(rid) for rid in route_ids})
+    
+    # get per route distances based on longest trip (in either direction)
     # not just per-trip distances
     
-    for tid in trip_ids:
-        jsons = jsons.replace('"__dists_{}__"'.format(tid), 
-            get_dists(tid, con).to_json(orient='records'))
+    for rid in route_ids:
+        print rid
+        dists = merge_dists({direction: get_dists(tid, con) 
+            for direction, tid in trip_max.ix[rid].trip_id.iteritems()})
+        
+        jsons = jsons.replace('"__dists_{}__"'.format(rid), 
+            dists.to_json(orient='records', double_precision=2))
     
-    with open('trip-distances.json', 'w+') as f:
+    with open('route-distances.json', 'w+') as f:
         f.write(jsons)
