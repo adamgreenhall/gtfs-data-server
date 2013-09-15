@@ -1,1 +1,4 @@
 venv/
+route-distances.json
+*.xlsx
+*.xls

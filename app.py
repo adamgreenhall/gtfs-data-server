@@ -9,6 +9,12 @@ stop_dists = get_stop_dists()
 
 app = Flask(__name__)
 
+counts = {nm: pd.read_csv('passenger_counts/{}.csv'.format(nm), index_col=0) 
+    for nm in [
+        'exits-WKDY', 'entries-WKDY', 
+        'exits-SAT', 'entries-SAT',
+        'exits-SUN', 'entries-SUN'
+        ]}
 
 
 @app.route('/schedule')
@@ -39,10 +45,15 @@ def get_trip_stops(date, stops):
         time_arrival='time_arrival',
         )
     stops = stops[col_names.keys()].rename(columns=col_names)
-    stops['count'] = 0
-    stops['count_boarding'] = 0
-    stops['count_exiting'] = 0
-    return stops, direction
+    
+    hour = stops.time_arrival.iloc[0].hour
+    service = service_type(date)
+    stops = stops.set_index('id_stop')
+    stops['count_exiting'] = counts['exits-{}'.format(service)].ix[hour][stops.index]
+    stops['count_boarding'] = counts['entries-{}'.format(service)].ix[hour][stops.index]
+    # hack 
+    stops['count'] = stops['count_boarding']
+    return stops.reset_index(), direction
 
 def create_schedule(date, route_id):
     # take the params and create a properly formatted schedule df
