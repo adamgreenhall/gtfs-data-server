@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_utils import crossdomain
 from utils import pd, service_type, prints, parse_date_times, timedelta, set_trace
 from config import con, config
 
@@ -16,8 +17,8 @@ counts = {nm: pd.read_csv('passenger_counts/{}.csv'.format(nm), index_col=0)
         'exits-SUN', 'entries-SUN'
         ]}
 
-
 @app.route('/schedule')
+@crossdomain(origin='*')
 def get_schedule():
     date = request.args.get('date', "2013-09-13")
     route_id = request.args.get('route_id', "01")
