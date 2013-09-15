@@ -1,41 +1,48 @@
 from flask import Flask, jsonify, request
-import pandas as pd
-from config import con, config, service_type
-import subprocess
-from datetime import timedelta
-from json import load
+from utils import pd, service_type, prints, parse_date_times, timedelta, set_trace
+from config import con, config
 
-if config['debug']:
-    from ipdb import set_trace
+# heroku needs to run get_stop_distances first
+from get_stop_distances import get_stop_dists
+stop_dists = get_stop_dists()
 
 
 app = Flask(__name__)
 
-if not config['debug']:
-    subprocess.Popen(
-        'python gtfsrdb/gtfsrdb.py -t {url_update} \
-            -d {db} --create-tables --wait 30'.format(
-            url_update=config['url_update'],
-            db=config['db']
-        ),
-        shell=True)
-
-    # heroku needs to run get_stop_distances first
-    from get_stop_distances import get_stop_dists
-    stop_dists = get_stop_dists()
-    print stop_dists
-else:
-    with open('route-distances.json', 'r') as f:
-        stop_dists = load(f)
 
 
 @app.route('/schedule')
 def get_schedule():
     date = request.args.get('date', "2013-09-13")
     route_id = request.args.get('route_id', "01")
-    json = create_schedule(date, route_id)
-    return json
+    try: 
+        response = create_schedule(date, route_id)
+    except Exception, e:
+        prints(e)
+        if config['debug']:
+            raise
+        else:
+            response = jsonify(error=str(e))
+    return response
 
+def get_trip_stops(date, stops):
+    direction = stops['direction_id'].iloc[0]
+    stops['time_arrival'] = parse_date_times(date, stops.arrival_time)
+
+    if (stops.departure_delay > 0).any():
+        # departure delay = arrival delay at next stop
+        stops['time_arrival'] += stops.departure_delay.shift(1)\
+                .fillna(0).apply(lambda t: timedelta(seconds=t))
+        
+    col_names=dict(
+        stop_id='id_stop',
+        time_arrival='time_arrival',
+        )
+    stops = stops[col_names.keys()].rename(columns=col_names)
+    stops['count'] = 0
+    stops['count_boarding'] = 0
+    stops['count_exiting'] = 0
+    return stops, direction
 
 def create_schedule(date, route_id):
     # take the params and create a properly formatted schedule df
@@ -74,39 +81,21 @@ def create_schedule(date, route_id):
     
     df = pd.read_sql(query, con, params=[route_id])
     
+
     trips = []
     trip_stops = {}
-    for (id_trip, trip_direction), stops in \
-        df.groupby(['trip_id', 'direction_id']):
-        stops['time_arrival'] = pd.to_datetime(
-            str(date.date()) + ' ' + stops.arrival_time
-            ) #  + stops.departure_delay.fillna(0).shift(1)
-
-        if (stops.departure_delay > 0).any():
-            # departure delay = arrival delay at next stop
-            stops['time_arrival'] += stops.departure_delay.shift(1).fillna(0)\
-                .apply(lambda t: timedelta(seconds=t))
-        
-        col_names=dict(
-            stop_id='id_stop',
-            time_arrival='time_arrival',
-            )
-        stops = stops[col_names.keys()].rename(columns=col_names)
-        stops['count'] = 0
-        stops['count_boarding'] = 0
-        stops['count_exiting'] = 0
+    for i, (id_trip, stops_data) in enumerate(df.groupby('trip_id')):
+        stops, direction = get_trip_stops(date, stops_data)            
         
         trip_stops[id_trip] = stops.to_json(orient='records')
         trips.append(dict(
             id_trip=id_trip,
-            trip_direction=trip_direction,
+            trip_direction=direction,
             stops="__trip_stops__{}".format(id_trip),
             ))
-
-    # placeholder_stop_locs = "__stop_locs__"
     response = jsonify(data=dict(
         date=str(date.date()),        
-        stop_locations=stop_dists[route_id],
+        stop_locations= stop_dists.get(route_id, []),
         id_route=route_id,
         trips=trips,
         ))

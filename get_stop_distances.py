@@ -4,8 +4,11 @@ get the distances between stops
 import numpy as np
 import math
 import pandas as pd
-from json import dumps
+import json
 from config import con
+import os
+
+json_filename = 'route-distances.json'
 
 def get_linear_dist(df):
     '''convert lat long to a linear distance travelled since start'''
@@ -88,7 +91,7 @@ def merge_dists(dists_direction):
     return dists
     
     
-def get_stop_dists(write_json=False):
+def calculate_stop_dists():
     query = """
     select 
         t.route_id, t.trip_id, t.direction_id, 
@@ -105,8 +108,7 @@ def get_stop_dists(write_json=False):
     
     distances = {}
 
-    if write_json:
-        jsons = dumps({rid: "__dists_{}__".format(rid) for rid in route_ids})
+    jsons = json.dumps({rid: "__dists_{}__".format(rid) for rid in route_ids})
     
     # get per route distances based on longest trip (in either direction)
     # not just per-trip distances
@@ -115,16 +117,24 @@ def get_stop_dists(write_json=False):
         print rid
         dists = merge_dists({direction: get_dists(tid, con) 
             for direction, tid in trip_max.ix[rid].trip_id.iteritems()})
-        distances[rid] = dists
+        # create json-dumpable object
+        dists_jsons = dists.to_json(orient='records', double_precision=2)
+        distances[rid] = json.loads(dists_jsons)
 
-        if write_json:
-            jsons = jsons.replace('"__dists_{}__"'.format(rid), 
-                dists.to_json(orient='records', double_precision=2))
-    if write_json:
-        with open('route-distances.json', 'w+') as f:
-            f.write(jsons)
+    
+    jsons = jsons.replace('"__dists_{}__"'.format(rid), dists_jsons)
+
+    with open(json_filename, 'w+') as f:
+        f.write(jsons)
     
     return distances
-    
+
+def get_stop_dists():
+    if os.path.exists(json_filename):
+        with open(json_filename, 'r') as f:
+            dists = json.load(f)
+    else:
+        dists = calculate_stop_dists()
+    return dists
 if __name__ == "__main__":
-    get_stop_dists(write_json=True)
+    distances = calculate_stop_dists()
