@@ -2,3 +2,6 @@ venv/
 route-distances.json
 *.xlsx
 *.xls
+*.geojson
+*.topojson
+*.kml
