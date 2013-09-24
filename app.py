@@ -93,23 +93,23 @@ def create_schedule(date, route_id):
     
     df = pd.read_sql(query, con, params=[route_id])
     
-
     trips = []
     trip_stops = {}
     for i, (id_trip, stops_data) in enumerate(df.groupby('trip_id')):
         stops, direction = get_trip_stops(date, stops_data)            
-        
         trip_stops[id_trip] = stops.to_json(orient='records')
         trips.append(dict(
             id_trip=id_trip,
             trip_direction=direction,
+            time_start= str(stops.time_arrival.min()),
             stops="__trip_stops__{}".format(id_trip),
             ))
+    
     response = jsonify(data=dict(
         date=str(date.date()),        
         stop_locations= stop_dists.get(route_id, []),
         id_route=route_id,
-        trips=trips,
+        trips=sorted(trips, key=lambda t: t['time_start']),
         ))
 
     for id_trip, stops_json in trip_stops.iteritems():
