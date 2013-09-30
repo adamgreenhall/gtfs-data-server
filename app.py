@@ -17,6 +17,7 @@ counts = {nm: pd.read_csv('passenger_counts/{}.csv'.format(nm), index_col=0)
         'exits-SUN', 'entries-SUN'
         ]}
 
+# TODO - rate limit via: flask.pocoo.org/snippets/70/
 @app.route('/schedule')
 @crossdomain(origin='*')
 def get_schedule():
