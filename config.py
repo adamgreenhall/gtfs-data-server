@@ -4,6 +4,17 @@ import urlparse
 from json import load
 import subprocess
 
+def launch_gtfs_updates(config):
+    # heroku needs to run the gtfsrdb script to get updates
+    subprocess.Popen(
+        'python gtfsrdb/gtfsrdb.py -t {url_update} \
+            -d {db} --create-tables --wait {t}'.format(
+            t=60 * 5, # check for new data every t sec
+            url_update=config['url_update'],
+            db=config['db']
+        ),
+        shell=True)
+
 if os.environ.get('IS_HEROKU', False):
     # if Heroku 
     # https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-python
@@ -23,19 +34,7 @@ if os.environ.get('IS_HEROKU', False):
         port=int(os.environ['PORT']),
         db=os.environ["DATABASE_URL"],
         url_update="http://www.bart.gov/dev/gtrtfs/tripupdate.aspx"
-        )
-    
-    
-    # heroku needs to run the gtfsrdb script to get updates
-    subprocess.Popen(
-        'python gtfsrdb/gtfsrdb.py -t {url_update} \
-            -d {db} --create-tables --wait {t}'.format(
-            t=60 * 5, # check for new data every t sec
-            url_update=config['url_update'],
-            db=config['db']
-        ),
-        shell=True)
-    
+        )    
     
 else:
     # is local

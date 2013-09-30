@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_utils import crossdomain
 from utils import pd, service_type, prints, parse_date_times, timedelta, set_trace
 from datetime import datetime
-from config import con, config
+from config import con, config, launch_gtfs_updates
 
 # heroku needs to run get_stop_distances first
 from get_stop_distances import get_stop_dists
@@ -17,6 +17,8 @@ counts = {nm: pd.read_csv('passenger_counts/{}.csv'.format(nm), index_col=0)
         'exits-SAT', 'entries-SAT',
         'exits-SUN', 'entries-SUN'
         ]}
+        
+launch_gtfs_updates(config)
 
 # TODO - rate limit via: flask.pocoo.org/snippets/70/
 @app.route('/schedule')
