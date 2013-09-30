@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_utils import crossdomain
 from utils import pd, service_type, prints, parse_date_times, timedelta, set_trace
+from datetime import datetime
 from config import con, config
 
 # heroku needs to run get_stop_distances first
@@ -21,7 +22,8 @@ counts = {nm: pd.read_csv('passenger_counts/{}.csv'.format(nm), index_col=0)
 @app.route('/schedule')
 @crossdomain(origin='*')
 def get_schedule():
-    date = request.args.get('date', "2013-09-13")
+    default_date = pd.Timestamp(datetime.now()) - pd.DateOffset(days=3)
+    date = request.args.get('date', default_date)
     route_id = request.args.get('route_id', "01")
     try: 
         response = create_schedule(date, route_id)
