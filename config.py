@@ -29,7 +29,8 @@ if os.environ.get('IS_HEROKU', False):
     # heroku needs to run the gtfsrdb script to get updates
     subprocess.Popen(
         'python gtfsrdb/gtfsrdb.py -t {url_update} \
-            -d {db} --create-tables --wait 30'.format(
+            -d {db} --create-tables --wait {t}'.format(
+            t=60 * 5, # check for new data every t sec
             url_update=config['url_update'],
             db=config['db']
         ),
