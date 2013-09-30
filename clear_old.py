@@ -16,6 +16,7 @@ delete from trip_updates where timestamp < '{}'
 """.format(t)
 
 cur = con.cursor()
+print('connected to db')
 try:
     cur.execute(query_stop)
     print('deleted stop updates: {}'.format(cur.rowcount))
